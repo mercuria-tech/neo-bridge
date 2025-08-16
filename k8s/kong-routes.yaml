@@ -1,0 +1,25 @@
+apiVersion: configuration.konghq.com/v1
+kind: KongService
+metadata:
+  name: test-service
+  namespace: neobridge
+spec:
+  host: test-service.neobridge.svc.cluster.local
+  port: 80
+  protocol: http
+---
+apiVersion: configuration.konghq.com/v1
+kind: KongRoute
+metadata:
+  name: test-route
+  namespace: neobridge
+spec:
+  protocols:
+  - http
+  methods:
+  - GET
+  paths:
+  - /
+  strip_path: false
+  service:
+    name: test-service

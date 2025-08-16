@@ -1,0 +1,272 @@
+# NeoBridge Crypto Service Configuration
+spring:
+  application:
+    name: neobridge-crypto-service
+  
+  profiles:
+    active: dev
+  
+  datasource:
+    url: jdbc:postgresql://postgres:5432/neobridge_dev
+    username: neobridge_user
+    password: neobridge_password
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+  
+  redis:
+    host: redis
+    port: 6379
+    database: 2
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: -1ms
+  
+  kafka:
+    bootstrap-servers: kafka:9092
+    consumer:
+      group-id: neobridge-crypto-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+server:
+  port: 8084
+  servlet:
+    context-path: /crypto
+
+# Security Configuration
+security:
+  jwt:
+    secret: neobridge-crypto-service-jwt-secret-key-2024
+    expiration: 86400000  # 24 hours
+    refresh-expiration: 604800000  # 7 days
+  
+  password:
+    encoder:
+      strength: 12
+
+# Logging Configuration
+logging:
+  level:
+    com.neobridge.crypto: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.kafka: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Management Endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# Crypto Service Specific Configuration
+neobridge:
+  crypto:
+    # Wallet generation
+    wallet:
+      address:
+        length: 42
+        checksum: true
+      derivation:
+        path: "m/44'/60'/0'/0/"
+        index: 0
+        hardened: true
+    
+    # Gas estimation
+    gas:
+      ethereum:
+        default_limit: 21000
+        max_limit: 30000000
+        default_price: 20000000000  # 20 Gwei
+        max_price: 100000000000     # 100 Gwei
+        priority_fee: 1500000000    # 1.5 Gwei
+      polygon:
+        default_limit: 21000
+        max_limit: 30000000
+        default_price: 30000000000  # 30 Gwei
+        max_price: 100000000000     # 100 Gwei
+        priority_fee: 1500000000    # 1.5 Gwei
+      arbitrum:
+        default_limit: 21000
+        max_limit: 30000000
+        default_price: 1000000000   # 1 Gwei
+        max_price: 10000000000      # 10 Gwei
+        priority_fee: 100000000     # 0.1 Gwei
+    
+    # Staking configuration
+    staking:
+      ethereum:
+        min_stake: 32.0
+        max_stake: 1000.0
+        apr: 0.045  # 4.5%
+        lock_period: 365  # days
+      polkadot:
+        min_stake: 1.0
+        max_stake: 10000.0
+        apr: 0.12   # 12%
+        lock_period: 28   # days
+      cosmos:
+        min_stake: 0.1
+        max_stake: 1000.0
+        apr: 0.08   # 8%
+        lock_period: 21   # days
+    
+    # Yield farming
+    yield:
+      uniswap:
+        min_liquidity: 100.0
+        apr: 0.15   # 15%
+        lock_period: 0    # days
+      aave:
+        min_deposit: 10.0
+        apr: 0.08   # 8%
+        lock_period: 0    # days
+      compound:
+        min_deposit: 10.0
+        apr: 0.06   # 6%
+        lock_period: 0    # days
+    
+    # DeFi protocols
+    defi:
+      uniswap:
+        version: "v3"
+        fee_tiers: [0.0001, 0.0005, 0.003, 0.01]
+        max_slippage: 0.05  # 5%
+      aave:
+        version: "v3"
+        max_slippage: 0.03  # 3%
+        liquidation_threshold: 0.8
+      compound:
+        version: "v3"
+        max_slippage: 0.03  # 3%
+        liquidation_threshold: 0.8
+    
+    # Price feeds
+    price:
+      update_interval: 30000  # 30 seconds
+      sources:
+        - "coinbase"
+        - "binance"
+        - "kraken"
+        - "coinmarketcap"
+        - "coingecko"
+      currencies:
+        - "USD"
+        - "EUR"
+        - "GBP"
+        - "JPY"
+        - "CHF"
+    
+    # Compliance settings
+    compliance:
+      aml:
+        enabled: true
+        threshold: 10000.0
+        currency: "USD"
+      kyc:
+        enabled: true
+        required: true
+      fraud:
+        enabled: true
+        scoring:
+          low: 0-30
+          medium: 31-70
+          high: 71-100
+        threshold: 70
+    
+    # Security settings
+    security:
+      encryption:
+        algorithm: "AES-256-GCM"
+        key_size: 256
+        iv_size: 12
+      signing:
+        algorithm: "ECDSA"
+        curve: "secp256k1"
+        key_size: 256
+      mnemonic:
+        word_count: 24
+        language: "english"
+        checksum: true
+    
+    # Network settings
+    network:
+      ethereum:
+        mainnet: "https://mainnet.infura.io/v3/"
+        polygon: "https://polygon-rpc.com"
+        arbitrum: "https://arb1.arbitrum.io/rpc"
+        optimism: "https://mainnet.optimism.io"
+        base: "https://mainnet.base.org"
+      bitcoin:
+        mainnet: "https://blockstream.info/api"
+        testnet: "https://blockstream.info/testnet/api"
+      polkadot:
+        mainnet: "wss://rpc.polkadot.io"
+        kusama: "wss://kusama-rpc.polkadot.io"
+      cosmos:
+        mainnet: "https://rpc.cosmos.network:26657"
+        osmosis: "https://rpc.osmosis.zone:26657"
+    
+    # Scheduling
+    scheduling:
+      price_updates:
+        cron: "*/30 * * * * *"  # Every 30 seconds
+        enabled: true
+      staking_rewards:
+        cron: "0 0 * * * *"     # Every hour
+        enabled: true
+      yield_claims:
+        cron: "0 0 0 * * *"     # Daily at midnight
+        enabled: true
+      compliance_checks:
+        cron: "0 */15 * * * *"  # Every 15 minutes
+        enabled: true
+
+# Cache Configuration
+  cache:
+    type: redis
+    redis:
+      time-to-live: 300000  # 5 minutes
+      cache-null-values: false
+    cache-names:
+      - crypto-wallets
+      - crypto-prices
+      - gas-estimates
+      - staking-rewards
+      - yield-rates
+      - defi-protocols

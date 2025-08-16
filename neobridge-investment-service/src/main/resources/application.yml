@@ -1,0 +1,326 @@
+# NeoBridge Investment Service Configuration
+spring:
+  application:
+    name: neobridge-investment-service
+  
+  profiles:
+    active: dev
+  
+  datasource:
+    url: jdbc:postgresql://postgres:5432/neobridge_dev
+    username: neobridge_user
+    password: neobridge_password
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+  
+  redis:
+    host: redis
+    port: 6379
+    database: 3
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: -1ms
+  
+  kafka:
+    bootstrap-servers: kafka:9092
+    consumer:
+      group-id: neobridge-investment-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+server:
+  port: 8085
+  servlet:
+    context-path: /investments
+
+# Security Configuration
+security:
+  jwt:
+    secret: neobridge-investment-service-jwt-secret-key-2024
+    expiration: 86400000  # 24 hours
+    refresh-expiration: 604800000  # 7 days
+  
+  password:
+    encoder:
+      strength: 12
+
+# Logging Configuration
+logging:
+  level:
+    com.neobridge.investment: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.kafka: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Management Endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# Investment Service Specific Configuration
+neobridge:
+  investment:
+    # Account types and limits
+    accounts:
+      individual:
+        min_initial_deposit: 1000.0
+        max_balance: 10000000.0
+        trading_limit: 100000.0
+      ira:
+        min_initial_deposit: 100.0
+        max_annual_contribution: 6500.0
+        catch_up_contribution: 1000.0
+      corporate:
+        min_initial_deposit: 10000.0
+        max_balance: 100000000.0
+        trading_limit: 1000000.0
+    
+    # Risk profiles and asset allocation
+    risk_profiles:
+      conservative:
+        stocks: 0.20
+        bonds: 0.60
+        cash: 0.15
+        alternatives: 0.05
+        max_volatility: 0.08
+      moderate_conservative:
+        stocks: 0.35
+        bonds: 0.45
+        cash: 0.15
+        alternatives: 0.05
+        max_volatility: 0.12
+      moderate:
+        stocks: 0.50
+        bonds: 0.30
+        cash: 0.15
+        alternatives: 0.05
+        max_volatility: 0.16
+      moderate_aggressive:
+        stocks: 0.65
+        bonds: 0.20
+        cash: 0.10
+        alternatives: 0.05
+        max_volatility: 0.20
+      aggressive:
+        stocks: 0.80
+        bonds: 0.10
+        cash: 0.05
+        alternatives: 0.05
+        max_volatility: 0.25
+      very_aggressive:
+        stocks: 0.90
+        bonds: 0.05
+        cash: 0.02
+        alternatives: 0.03
+        max_volatility: 0.30
+    
+    # Investment strategies
+    strategies:
+      buy_and_hold:
+        rebalance_frequency: "YEARLY"
+        max_turnover: 0.10
+        tax_optimization: true
+      value_investing:
+        rebalance_frequency: "QUARTERLY"
+        max_turnover: 0.25
+        tax_optimization: true
+      growth_investing:
+        rebalance_frequency: "QUARTERLY"
+        max_turnover: 0.30
+        tax_optimization: true
+      dividend_investing:
+        rebalance_frequency: "MONTHLY"
+        max_turnover: 0.20
+        tax_optimization: true
+      momentum_investing:
+        rebalance_frequency: "WEEKLY"
+        max_turnover: 0.50
+        tax_optimization: false
+      day_trading:
+        rebalance_frequency: "DAILY"
+        max_turnover: 1.00
+        tax_optimization: false
+    
+    # Trading limits and fees
+    trading:
+      limits:
+        max_order_size: 100000.0
+        max_daily_trades: 100
+        max_daily_volume: 1000000.0
+        min_order_size: 1.0
+        max_positions: 100
+        max_leverage: 2.0
+      
+      fees:
+        commission:
+          stocks: 0.0049  # $4.99 per trade
+          etfs: 0.0049   # $4.99 per trade
+          options: 0.65  # $0.65 per contract
+          futures: 2.25  # $2.25 per contract
+        platform_fee: 0.0
+        inactivity_fee: 0.0
+        transfer_fee: 75.0
+        wire_fee: 25.0
+        ach_fee: 0.0
+    
+    # Portfolio management
+    portfolio:
+      rebalancing:
+        frequency: "QUARTERLY"
+        threshold: 0.05  # 5% deviation
+        max_deviation: 0.10  # 10% max deviation
+        tax_loss_harvesting: true
+        wash_sale_rule: true
+      
+      diversification:
+        min_positions: 10
+        max_single_position: 0.20  # 20% max
+        max_sector_exposure: 0.30  # 30% max
+        max_country_exposure: 0.50  # 50% max
+        min_international: 0.20    # 20% min
+    
+    # Market data and pricing
+    market_data:
+      update_frequency: 1000  # 1 second
+      sources:
+        - "yahoo_finance"
+        - "alpha_vantage"
+        - "iex_cloud"
+        - "polygon"
+        - "finnhub"
+        - "quandl"
+      
+      exchanges:
+        - "NYSE"
+        - "NASDAQ"
+        - "AMEX"
+        - "ARCA"
+        - "BATS"
+        - "CBOE"
+        - "CME"
+        - "ICE"
+        - "LSE"
+        - "TSE"
+        - "ASX"
+        - "SGX"
+        - "HKEX"
+        - "SSE"
+        - "SZSE"
+    
+    # Compliance and risk management
+    compliance:
+      aml:
+        enabled: true
+        threshold: 10000.0
+        currency: "USD"
+      kyc:
+        enabled: true
+        required: true
+      fraud:
+        enabled: true
+        scoring:
+          low: 0-30
+          medium: 31-70
+          high: 71-100
+        threshold: 70
+      
+      risk_limits:
+        max_drawdown: 0.25  # 25% max drawdown
+        var_limit: 0.05     # 5% Value at Risk
+        concentration_limit: 0.20  # 20% concentration limit
+        leverage_limit: 2.0  # 2x max leverage
+    
+    # Performance analytics
+    analytics:
+      metrics:
+        - "sharpe_ratio"
+        - "sortino_ratio"
+        - "calmar_ratio"
+        - "information_ratio"
+        - "treynor_ratio"
+        - "jensen_alpha"
+        - "beta"
+        - "alpha"
+        - "volatility"
+        - "max_drawdown"
+        - "var"
+        - "cvar"
+        - "omega_ratio"
+        - "ulcer_index"
+        - "pain_ratio"
+      
+      benchmarks:
+        - "SPY"    # S&P 500 ETF
+        - "QQQ"    # NASDAQ-100 ETF
+        - "IWM"    # Russell 2000 ETF
+        - "AGG"    # US Aggregate Bond ETF
+        - "GLD"    # Gold ETF
+        - "VNQ"    # Real Estate ETF
+        - "EFA"    # Developed Markets ETF
+        - "EEM"    # Emerging Markets ETF
+    
+    # Scheduling
+    scheduling:
+      portfolio_rebalancing:
+        cron: "0 0 1 * * 1"  # First Monday of each month
+        enabled: true
+      performance_calculation:
+        cron: "0 0 * * * *"  # Every hour
+        enabled: true
+      risk_monitoring:
+        cron: "0 */15 * * * *"  # Every 15 minutes
+        enabled: true
+      market_data_updates:
+        cron: "*/1 * * * * *"  # Every second
+        enabled: true
+
+# Cache Configuration
+  cache:
+    type: redis
+    redis:
+      time-to-live: 300000  # 5 minutes
+      cache-null-values: false
+    cache-names:
+      - investment-accounts
+      - portfolio-holdings
+      - market-data
+      - performance-metrics
+      - risk-calculations
+      - trading-orders

@@ -1,0 +1,23 @@
+# NeoBridge Platform - Database Backup Cron Jobs
+# Add these lines to your crontab for automated backups
+
+# Daily backup at 2:00 AM
+0 2 * * * /path/to/neobridge-platform/database/backup/backup-script.sh >> /var/log/neobridge-backup.log 2>&1
+
+# Weekly backup on Sunday at 3:00 AM
+0 3 * * 0 /path/to/neobridge-platform/database/backup/backup-script.sh >> /var/log/neobridge-backup.log 2>&1
+
+# Monthly backup on the 1st at 4:00 AM
+0 4 1 * * /path/to/neobridge-platform/database/backup/backup-script.sh >> /var/log/neobridge-backup.log 2>&1
+
+# To install these cron jobs:
+# 1. Edit your crontab: crontab -e
+# 2. Copy and paste the desired lines above
+# 3. Update the path to match your actual installation directory
+# 4. Save and exit
+
+# Alternative: Create a separate crontab file
+# crontab /path/to/neobridge-platform/database/backup/cron-backup.txt
+
+# Log rotation (optional)
+# 0 5 * * 0 logrotate /etc/logrotate.d/neobridge-backup

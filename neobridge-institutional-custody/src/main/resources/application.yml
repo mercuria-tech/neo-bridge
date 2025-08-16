@@ -1,0 +1,496 @@
+# NeoBridge Institutional Custody Service Configuration
+spring:
+  application:
+    name: neobridge-institutional-custody
+  
+  profiles:
+    active: dev
+  
+  datasource:
+    url: jdbc:postgresql://postgres:5432/neobridge_dev
+    username: neobridge_user
+    password: neobridge_password
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+  
+  redis:
+    host: redis
+    port: 6379
+    database: 6
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: -1ms
+  
+  kafka:
+    bootstrap-servers: kafka:9092
+    consumer:
+      group-id: neobridge-institutional-custody
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+server:
+  port: 8088
+  servlet:
+    context-path: /custody
+
+# Security Configuration
+security:
+  jwt:
+    secret: neobridge-institutional-custody-jwt-secret-key-2024
+    expiration: 86400000  # 24 hours
+    refresh-expiration: 604800000  # 7 days
+  
+  password:
+    encoder:
+      strength: 12
+
+# Logging Configuration
+logging:
+  level:
+    com.neobridge.custody: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.kafka: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.web3j: INFO
+    org.bitcoinj: INFO
+    org.bouncycastle: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Management Endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# Institutional Custody Service Specific Configuration
+neobridge:
+  institutional-custody:
+    # Wallet Types & Security Levels
+    wallet_types:
+      single_signature:
+        name: "Single Signature"
+        description: "Basic wallet with single private key"
+        security_level: "BASIC"
+        max_balance: 100000
+        insurance_coverage: 0.0
+        audit_frequency: "QUARTERLY"
+      
+      multi_signature:
+        name: "Multi-Signature"
+        description: "Wallet requiring multiple signatures for transactions"
+        security_level: "STANDARD"
+        max_balance: 1000000
+        insurance_coverage: 0.5
+        audit_frequency: "MONTHLY"
+      
+      threshold_signature:
+        name: "Threshold Signature"
+        description: "Advanced multi-signature with threshold requirements"
+        security_level: "PREMIUM"
+        max_balance: 10000000
+        insurance_coverage: 0.8
+        audit_frequency: "WEEKLY"
+      
+      hardware_wallet:
+        name: "Hardware Wallet"
+        description: "Cold storage with hardware security modules"
+        security_level: "INSTITUTIONAL"
+        max_balance: 100000000
+        insurance_coverage: 0.9
+        audit_frequency: "DAILY"
+      
+      air_gapped:
+        name: "Air-Gapped"
+        description: "Completely offline wallet for maximum security"
+        security_level: "ENTERPRISE"
+        max_balance: 1000000000
+        insurance_coverage: 0.95
+        audit_frequency: "CONTINUOUS"
+    
+    # Security Features
+    security:
+      # Encryption
+      encryption:
+        algorithm: "AES_256_GCM"
+        key_length: 256
+        key_iterations: 100000
+        salt_length: 32
+        iv_length: 16
+      
+      # Key Management
+      key_management:
+        key_derivation: "PBKDF2"
+        key_storage: "HSM"
+        key_rotation: "QUARTERLY"
+        backup_encryption: true
+        key_recovery: true
+      
+      # Multi-Factor Authentication
+      mfa:
+        enabled: true
+        methods:
+          - "TOTP"
+          - "SMS"
+          - "EMAIL"
+          - "HARDWARE_TOKEN"
+          - "BIOMETRIC"
+        required_factors: 2
+        backup_codes: true
+      
+      # Session Management
+      session:
+        max_duration: 3600  # 1 hour
+        idle_timeout: 900   # 15 minutes
+        concurrent_sessions: 1
+        session_fixation: false
+        csrf_protection: true
+    
+    # Hardware Security Module (HSM) Configuration
+    hsm:
+      # Azure Key Vault
+      azure:
+        vault_url: "${AZURE_KEY_VAULT_URL}"
+        tenant_id: "${AZURE_TENANT_ID}"
+        client_id: "${AZURE_CLIENT_ID}"
+        client_secret: "${AZURE_CLIENT_SECRET}"
+        key_type: "RSA_4096"
+        key_operations:
+          - "encrypt"
+          - "decrypt"
+          - "sign"
+          - "verify"
+          - "wrapKey"
+          - "unwrapKey"
+      
+      # AWS KMS
+      aws:
+        region: "${AWS_REGION}"
+        access_key: "${AWS_ACCESS_KEY_ID}"
+        secret_key: "${AWS_SECRET_ACCESS_KEY}"
+        key_type: "RSA_4096"
+        key_usage: "SIGN_VERIFY"
+        customer_master_key: true
+      
+      # Google Cloud KMS
+      google:
+        project_id: "${GOOGLE_CLOUD_PROJECT_ID}"
+        location: "${GOOGLE_CLOUD_LOCATION}"
+        key_ring: "${GOOGLE_CLOUD_KEY_RING}"
+        key_type: "RSA_4096"
+        protection_level: "HSM"
+        algorithm: "RSA_SIGN_PKCS1_4096_SHA512"
+    
+    # Multi-Signature Configuration
+    multi_signature:
+      # Threshold Settings
+      threshold:
+        min_signers: 2
+        max_signers: 10
+        default_required: 3
+        quorum_required: true
+      
+      # Signer Management
+      signers:
+        max_per_wallet: 10
+        min_approval_percentage: 66
+        auto_approval_threshold: 0.0
+        signer_rotation: "QUARTERLY"
+      
+      # Transaction Signing
+      signing:
+        batch_signing: true
+        offline_signing: true
+        hardware_signing: true
+        time_locks: true
+        revocable_approvals: true
+    
+    # Cold Storage Configuration
+    cold_storage:
+      # Storage Types
+      types:
+        hardware_wallet:
+          enabled: true
+          providers:
+            - "ledger"
+            - "trezor"
+            - "coldcard"
+            - "bitbox"
+            - "ellipal"
+            - "safepal"
+        
+        paper_wallet:
+          enabled: false
+          encryption: true
+          backup_copies: 3
+        
+        air_gapped:
+          enabled: true
+          offline_computer: true
+          secure_environment: true
+        
+        vault_storage:
+          enabled: true
+          physical_vault: true
+          insurance_coverage: 0.95
+      
+      # Security Measures
+      security:
+        tamper_evidence: true
+        environmental_monitoring: true
+        access_controls: true
+        surveillance: true
+        insurance: true
+        audit_trail: true
+    
+    # Compliance & Regulatory
+    compliance:
+      # Regulatory Frameworks
+      frameworks:
+        eu_mica:
+          enabled: true
+          requirements:
+            - "capital_requirements"
+            - "liquidity_requirements"
+            - "risk_management"
+            - "governance"
+            - "transparency"
+        
+        us_sec:
+          enabled: true
+          requirements:
+            - "custody_requirements"
+            - "reporting_obligations"
+            - "audit_requirements"
+            - "compliance_program"
+        
+        uk_fca:
+          enabled: true
+          requirements:
+            - "prudential_requirements"
+            - "conduct_requirements"
+            - "reporting_requirements"
+            - "governance"
+        
+        singapore_mas:
+          enabled: true
+          requirements:
+            - "capital_adequacy"
+            - "risk_management"
+            - "compliance_monitoring"
+            - "reporting"
+      
+      # Audit Requirements
+      audit:
+        frequency: "QUARTERLY"
+        scope: "COMPREHENSIVE"
+        external_auditor: true
+        internal_audit: true
+        compliance_audit: true
+        security_audit: true
+        operational_audit: true
+        financial_audit: true
+      
+      # Reporting Requirements
+      reporting:
+        regulatory_reports: true
+        internal_reports: true
+        client_reports: true
+        risk_reports: true
+        compliance_reports: true
+        audit_reports: true
+        frequency: "MONTHLY"
+    
+    # White-Label Platform Features
+    white_label:
+      # Branding
+      branding:
+        logo_customization: true
+        color_scheme: true
+        typography: true
+        layout_customization: true
+        domain_customization: true
+        email_branding: true
+        mobile_app_branding: true
+      
+      # Features
+      features:
+        dashboard_customization: true
+        report_customization: true
+        api_customization: true
+        workflow_customization: true
+        integration_customization: true
+        compliance_customization: true
+        security_customization: true
+      
+      # Multi-Tenant Support
+      multi_tenant:
+        enabled: true
+        tenant_isolation: true
+        data_segregation: true
+        custom_configurations: true
+        tenant_management: true
+        billing_integration: true
+        support_integration: true
+    
+    # Insurance & Risk Management
+    insurance:
+      # Coverage Types
+      coverage:
+        theft: true
+        fraud: true
+        cyber_attack: true
+        natural_disaster: true
+        operational_error: true
+        regulatory_fine: true
+        legal_liability: true
+      
+      # Coverage Limits
+      limits:
+        per_wallet: 10000000
+        per_incident: 50000000
+        aggregate_limit: 100000000
+        deductible: 100000
+      
+      # Insurance Providers
+      providers:
+        - "lloyd's"
+        - "aig"
+        - "chubb"
+        - "berkshire_hathaway"
+        - "marsh"
+        - "willis_towers_watson"
+    
+    # Disaster Recovery & Business Continuity
+    disaster_recovery:
+      # Recovery Objectives
+      objectives:
+        rto: 3600      # Recovery Time Objective: 1 hour
+        rpo: 300       # Recovery Point Objective: 5 minutes
+        mto: 7200      # Maximum Tolerable Outage: 2 hours
+      
+      # Backup Strategy
+      backup:
+        frequency: "HOURLY"
+        retention: "7_YEARS"
+        encryption: true
+        geographic_redundancy: true
+        offline_backup: true
+        cloud_backup: true
+      
+      # Recovery Procedures
+      recovery:
+        automated_recovery: true
+        manual_recovery: true
+        testing_frequency: "MONTHLY"
+        recovery_drills: true
+        documentation: true
+        training: true
+    
+    # Integration Settings
+    integration:
+      # External Services
+      external_services:
+        banking:
+          - "swift"
+          - "sepa"
+          - "ach"
+          - "wire_transfer"
+        
+        trading:
+          - "interactive_brokers"
+          - "td_ameritrade"
+          - "charles_schwab"
+          - "fidelity"
+        
+        compliance:
+          - "chainalysis"
+          - "elliptic"
+          - "ciphertrace"
+          - "crystal"
+        
+        insurance:
+          - "lloyd's"
+          - "aig"
+          - "chubb"
+          - "berkshire_hathaway"
+      
+      # Internal services
+      internal_services:
+        - "neobridge-auth-service"
+        - "neobridge-account-service"
+        - "neobridge-payment-service"
+        - "neobridge-crypto-service"
+        - "neobridge-investment-service"
+        - "neobridge-ai-risk-service"
+        - "neobridge-nft-marketplace"
+        - "neobridge-compliance-service"
+        - "neobridge-analytics-service"
+    
+    # Scheduling
+    scheduling:
+      wallet_monitoring:
+        cron: "0 */1 * * * *"  # Every minute
+        enabled: true
+      security_audits:
+        cron: "0 0 0 * * 1"    # Every Monday at midnight
+        enabled: true
+      compliance_checks:
+        cron: "0 0 */6 * * *"  # Every 6 hours
+        enabled: true
+      backup_operations:
+        cron: "0 0 */1 * * *"  # Every hour
+        enabled: true
+      insurance_renewals:
+        cron: "0 0 0 1 * *"    # Monthly on 1st
+        enabled: true
+
+# Cache Configuration
+  cache:
+    type: redis
+    redis:
+      time-to-live: 300000  # 5 minutes
+      cache-null-values: false
+    cache-names:
+      - custody-wallets
+      - wallet-signers
+      - wallet-transactions
+      - wallet-backups
+      - hsm-keys
+      - compliance-data
+      - audit-logs
+      - insurance-policies

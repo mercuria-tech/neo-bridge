@@ -1,0 +1,210 @@
+_format_version: "3.0"
+_transform: true
+
+# NeoBridge API Gateway Configuration
+# Kong Enterprise configuration for routing, security, and monitoring
+
+# Global plugins will be applied to all services
+# Prometheus metrics plugin for monitoring
+
+# Services
+services:
+  # Authentication Service
+  - name: auth-service
+    url: http://neobridge-auth-service:8081
+    routes:
+      - name: auth-routes
+        protocols: [http, https]
+        paths: ["/auth"]
+        strip_path: true
+        preserve_host: false
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 100
+          hour: 1000
+          policy: local
+      - name: cors
+        config:
+          origins: ["*"]
+          methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+          headers: ["Content-Type", "Authorization", "X-Requested-With"]
+          exposed_headers: ["X-Total-Count"]
+          credentials: true
+          max_age: 3600
+      - name: request-transformer
+        config:
+          add:
+            headers: ["X-Service: auth-service"]
+      - name: response-transformer
+        config:
+          add:
+            headers: ["X-Gateway: neobridge-api-gateway"]
+
+  # Account Service
+  - name: account-service
+    url: http://neobridge-account-service:8082
+    routes:
+      - name: account-routes
+        protocols: [http, https]
+        paths: ["/accounts"]
+        strip_path: true
+        preserve_host: false
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 200
+          hour: 2000
+          policy: local
+      - name: cors
+        config:
+          origins: ["*"]
+          methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+          headers: ["Content-Type", "Authorization", "X-Requested-With"]
+          exposed_headers: ["X-Total-Count"]
+          credentials: true
+          max_age: 3600
+      - name: jwt
+        config:
+          uri_param_names: ["jwt"]
+          cookie_names: ["jwt"]
+          header_names: ["Authorization"]
+          claims_to_verify: ["exp"]
+          key_claim_name: "iss"
+          secret_is_base64: false
+          anonymous: null
+          run_on_preflight: true
+
+  # Payment Service
+  - name: payment-service
+    url: http://neobridge-payment-service:8083
+    routes:
+      - name: payment-routes
+        protocols: [http, https]
+        paths: ["/payments"]
+        strip_path: true
+        preserve_host: false
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 300
+          hour: 3000
+          policy: local
+      - name: cors
+        config:
+          origins: ["*"]
+          methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+          headers: ["Content-Type", "Authorization", "X-Requested-With"]
+          exposed_headers: ["X-Total-Count"]
+          credentials: true
+          max_age: 3600
+      - name: jwt
+        config:
+          uri_param_names: ["jwt"]
+          cookie_names: ["jwt"]
+          header_names: ["Authorization"]
+          claims_to_verify: ["exp"]
+          key_claim_name: "iss"
+          secret_is_base64: false
+          anonymous: null
+          run_on_preflight: true
+
+  # Crypto Service
+  - name: crypto-service
+    url: http://neobridge-crypto-service:8084
+    routes:
+      - name: crypto-routes
+        protocols: [http, https]
+        paths: ["/crypto"]
+        strip_path: true
+        preserve_host: false
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 150
+          hour: 1500
+          policy: local
+      - name: cors
+        config:
+          origins: ["*"]
+          methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+          headers: ["Content-Type", "Authorization", "X-Requested-With"]
+          exposed_headers: ["X-Total-Count"]
+          credentials: true
+          max_age: 3600
+      - name: jwt
+        config:
+          uri_param_names: ["jwt"]
+          cookie_names: ["jwt"]
+          header_names: ["Authorization"]
+          claims_to_verify: ["exp"]
+          key_claim_name: "iss"
+          secret_is_base64: false
+          anonymous: null
+          run_on_preflight: true
+
+  # Admin Service
+  - name: admin-service
+    url: http://neobridge-admin-service:8085
+    routes:
+      - name: admin-routes
+        protocols: [http, https]
+        paths: ["/admin"]
+        strip_path: true
+        preserve_host: false
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 50
+          hour: 500
+          policy: local
+      - name: cors
+        config:
+          origins: ["*"]
+          methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+          headers: ["Content-Type", "Authorization", "X-Requested-With"]
+          exposed_headers: ["X-Total-Count"]
+          credentials: true
+          max_age: 3600
+      - name: jwt
+        config:
+          uri_param_names: ["jwt"]
+          cookie_names: ["jwt"]
+          header_names: ["Authorization"]
+          claims_to_verify: ["exp"]
+          key_claim_name: "iss"
+          secret_is_base64: false
+          anonymous: null
+          run_on_preflight: true
+
+# Global rate limiting for all services
+plugins:
+  - name: rate-limiting
+    config:
+      minute: 1000
+      hour: 10000
+      policy: local
+    protocols: [http, https]
+    tags: ["global-rate-limit"]
+
+  - name: ip-restriction
+    config:
+      allow: ["0.0.0.0/0"]
+      deny: []
+    protocols: [http, https]
+    tags: ["ip-restriction"]
+
+  - name: request-size-limiting
+    config:
+      allowed_payload_size: 10485760  # 10MB
+    protocols: [http, https]
+    tags: ["request-size-limit"]
+
+  - name: response-ratelimiting
+    config:
+      limits:
+        bandwidth: 10485760  # 10MB per minute
+        requests: 1000
+      window_size: 60
+    protocols: [http, https]
+    tags: ["response-rate-limit"]

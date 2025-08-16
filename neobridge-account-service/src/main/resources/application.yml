@@ -1,0 +1,190 @@
+# NeoBridge Account Service Configuration
+spring:
+  application:
+    name: neobridge-account-service
+  
+  profiles:
+    active: dev
+  
+  datasource:
+    url: jdbc:postgresql://postgres:5432/neobridge_dev
+    username: neobridge_user
+    password: neobridge_password
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+  
+  redis:
+    host: redis
+    port: 6379
+    database: 0
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: -1ms
+  
+  kafka:
+    bootstrap-servers: kafka:9092
+    consumer:
+      group-id: neobridge-account-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+server:
+  port: 8082
+  servlet:
+    context-path: /accounts
+
+# Security Configuration
+security:
+  jwt:
+    secret: neobridge-account-service-jwt-secret-key-2024
+    expiration: 86400000  # 24 hours
+    refresh-expiration: 604800000  # 7 days
+  
+  password:
+    encoder:
+      strength: 12
+
+# Logging Configuration
+logging:
+  level:
+    com.neobridge.account: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.kafka: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Management Endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      show-components: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  health:
+    redis:
+      enabled: true
+    db:
+      enabled: true
+    kafka:
+      enabled: true
+
+# Account Service Specific Configuration
+neobridge:
+  account:
+    # Account number generation
+    account-number:
+      prefix:
+        current: "CUR"
+        savings: "SAV"
+        fixed-deposit: "FD"
+        business: "BUS"
+        student: "STU"
+        senior-citizen: "SEN"
+        premium: "PRE"
+        basic: "BAS"
+      length: 12
+      separator: "-"
+    
+    # Default limits
+    limits:
+      daily:
+        current: 10000.00
+        savings: 5000.00
+        fixed-deposit: 0.00
+        business: 50000.00
+        student: 1000.00
+        senior-citizen: 2000.00
+        premium: 25000.00
+        basic: 5000.00
+      monthly:
+        current: 100000.00
+        savings: 50000.00
+        fixed-deposit: 0.00
+        business: 500000.00
+        student: 10000.00
+        senior-citizen: 20000.00
+        premium: 250000.00
+        basic: 50000.00
+    
+    # Interest rates (annual)
+    interest-rates:
+      current: 0.0000  # 0.00%
+      savings: 0.0250  # 2.50%
+      fixed-deposit: 0.0450  # 4.50%
+      business: 0.0100  # 1.00%
+      student: 0.0150  # 1.50%
+      senior-citizen: 0.0300  # 3.00%
+      premium: 0.0350  # 3.50%
+      basic: 0.0200  # 2.00%
+    
+    # Overdraft limits
+    overdraft:
+      current: 1000.00
+      business: 5000.00
+      premium: 2500.00
+    
+    # Transaction processing
+    transaction:
+      max-amount: 1000000.00  # 1 million
+      min-amount: 0.01
+      max-description-length: 500
+      max-reference-length: 100
+    
+    # Scheduling
+    scheduling:
+      interest-calculation:
+        cron: "0 0 1 * * *"  # Daily at 1 AM
+        enabled: true
+      limit-reset:
+        daily:
+          cron: "0 0 0 * * *"  # Daily at midnight
+          enabled: true
+        monthly:
+          cron: "0 0 0 1 * *"  # Monthly on 1st at midnight
+          enabled: true
+
+# Cache Configuration
+  cache:
+    type: redis
+    redis:
+      time-to-live: 300000  # 5 minutes
+      cache-null-values: false
+    cache-names:
+      - accounts
+      - transactions
+      - user-accounts

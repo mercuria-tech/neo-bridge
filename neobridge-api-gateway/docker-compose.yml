@@ -1,0 +1,129 @@
+version: '3.8'
+
+services:
+  # Kong Database (PostgreSQL)
+  kong-database:
+    image: postgres:15-alpine
+    container_name: neobridge-kong-database
+    environment:
+      POSTGRES_DB: kong
+      POSTGRES_USER: kong
+      POSTGRES_PASSWORD: kong_password
+    volumes:
+      - kong_data:/var/lib/postgresql/data
+    networks:
+      - neobridge-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kong -d kong"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Kong Migration
+  kong-migration:
+    image: kong:3.4
+    container_name: neobridge-kong-migration
+    command: kong migrations bootstrap
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: kong-database
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: kong_password
+      KONG_PG_DATABASE: kong
+    depends_on:
+      kong-database:
+        condition: service_healthy
+    networks:
+      - neobridge-network
+    restart: on-failure
+
+  # Kong API Gateway
+  kong:
+    image: kong:3.4
+    container_name: neobridge-kong
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: kong-database
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: kong_password
+      KONG_PG_DATABASE: kong
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+      KONG_ADMIN_GUI_URL: http://localhost:8002
+      KONG_PROXY_LISTEN: 0.0.0.0:8000, 0.0.0.0:8443 ssl
+      KONG_SSL: on
+      KONG_SSL_CERT: /etc/ssl/certs/kong.crt
+      KONG_SSL_CERT_KEY: /etc/ssl/private/kong.key
+      KONG_SSL_CIPHER_SUITE: intermediate
+      KONG_SSL_PROTOCOLS: TLSv1.2,TLSv1.3
+      KONG_UPSTREAM_KEEPALIVE: 32
+      KONG_UPSTREAM_KEEPALIVE_TIMEOUT: 60s
+      KONG_RATE_LIMITING: on
+      KONG_RATE_LIMITING_POLICY: local
+      KONG_CORS_ORIGINS: "*"
+      KONG_CORS_METHODS: "GET,POST,PUT,DELETE,OPTIONS"
+      KONG_CORS_HEADERS: "Content-Type,Authorization,X-Requested-With"
+      KONG_CORS_EXPOSED_HEADERS: "X-Total-Count"
+      KONG_CORS_CREDENTIALS: "true"
+      KONG_CORS_MAX_AGE: 3600
+      KONG_JWT_SECRET: neobridge-jwt-secret-key-change-in-production
+      KONG_JWT_EXPIRATION: 86400000
+      KONG_JWT_REFRESH_EXPIRATION: 604800000
+      KONG_PROMETHEUS_METRICS: on
+      KONG_PROMETHEUS_STATUS_CODES: on
+      KONG_PROMETHEUS_LATENCY: on
+      KONG_PROMETHEUS_BANDWIDTH: on
+      KONG_PROMETHEUS_UPSTREAM_HEALTH: on
+      KONG_TRUSTED_IPS: "0.0.0.0/0"
+      KONG_REAL_IP_HEADER: "X-Real-IP"
+      KONG_REAL_IP_RECURSIVE: "off"
+      KONG_LOG_LEVEL: info
+      KONG_LOG_FORMAT: json
+      KONG_NGINX_WORKER_PROCESSES: auto
+      KONG_NGINX_WORKER_CONNECTIONS: auto
+      KONG_NGINX_WORKER_RLIMIT_NOFILE: auto
+    depends_on:
+      kong-migration:
+        condition: service_completed_successfully
+    ports:
+      - "8000:8000"   # Proxy
+      - "8001:8001"   # Admin API
+      - "8002:8002"   # Admin GUI
+      - "8443:8443"   # SSL Proxy
+    volumes:
+      - ./config:/etc/kong
+      - ./ssl:/etc/ssl
+    networks:
+      - neobridge-network
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Kong Admin GUI (Optional)
+  kong-admin-gui:
+    image: kong/kong-admin-gui:latest
+    container_name: neobridge-kong-admin-gui
+    environment:
+      KONG_ADMIN_URL: http://kong:8001
+      KONG_ADMIN_GUI_URL: http://localhost:8002
+    ports:
+      - "8002:8002"
+    depends_on:
+      kong:
+        condition: service_healthy
+    networks:
+      - neobridge-network
+    restart: unless-stopped
+
+volumes:
+  kong_data:
+
+networks:
+  neobridge-network:
+    external: true

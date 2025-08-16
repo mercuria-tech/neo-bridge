@@ -1,0 +1,409 @@
+# NeoBridge AI Risk Assessment Service Configuration
+spring:
+  application:
+    name: neobridge-ai-risk-service
+  
+  profiles:
+    active: dev
+  
+  datasource:
+    url: jdbc:postgresql://postgres:5432/neobridge_dev
+    username: neobridge_user
+    password: neobridge_password
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+  
+  redis:
+    host: redis
+    port: 6379
+    database: 4
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: -1ms
+  
+  kafka:
+    bootstrap-servers: kafka:9092
+    consumer:
+      group-id: neobridge-ai-risk-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+server:
+  port: 8086
+  servlet:
+    context-path: /ai-risk
+
+# Security Configuration
+security:
+  jwt:
+    secret: neobridge-ai-risk-service-jwt-secret-key-2024
+    expiration: 86400000  # 24 hours
+    refresh-expiration: 604800000  # 7 days
+  
+  password:
+    encoder:
+      strength: 12
+
+# Logging Configuration
+logging:
+  level:
+    com.neobridge.airisk: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.kafka: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.deeplearning4j: INFO
+    org.nd4j: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Management Endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# AI Risk Service Specific Configuration
+neobridge:
+  ai-risk:
+    # Machine Learning Models
+    models:
+      risk_scoring:
+        version: "1.0.0"
+        type: "neural_network"
+        architecture: "feedforward"
+        layers: [64, 32, 16, 8, 1]
+        activation: "relu"
+        output_activation: "sigmoid"
+        optimizer: "adam"
+        learning_rate: 0.001
+        batch_size: 32
+        epochs: 100
+        validation_split: 0.2
+        early_stopping: true
+        patience: 10
+      
+      yield_optimization:
+        version: "1.0.0"
+        type: "reinforcement_learning"
+        algorithm: "deep_q_learning"
+        state_size: 50
+        action_size: 20
+        memory_size: 10000
+        batch_size: 64
+        gamma: 0.95
+        epsilon: 0.1
+        epsilon_min: 0.01
+        epsilon_decay: 0.995
+        learning_rate: 0.001
+      
+      fraud_detection:
+        version: "1.0.0"
+        type: "isolation_forest"
+        contamination: 0.1
+        n_estimators: 100
+        max_samples: "auto"
+        random_state: 42
+      
+      market_prediction:
+        version: "1.0.0"
+        type: "lstm"
+        sequence_length: 60
+        lstm_units: 50
+        dropout: 0.2
+        recurrent_dropout: 0.2
+        return_sequences: false
+    
+    # Feature Engineering
+    features:
+      user_profile:
+        - "age"
+        - "income_level"
+        - "employment_status"
+        - "credit_score"
+        - "investment_experience"
+        - "risk_tolerance"
+        - "financial_goals"
+        - "time_horizon"
+        - "liquidity_needs"
+        - "tax_considerations"
+      
+      portfolio_metrics:
+        - "total_value"
+        - "diversification_score"
+        - "sector_allocation"
+        - "geographic_allocation"
+        - "asset_class_allocation"
+        - "correlation_matrix"
+        - "volatility"
+        - "sharpe_ratio"
+        - "max_drawdown"
+        - "var_95"
+        - "cvar_95"
+        - "beta"
+        - "alpha"
+        - "tracking_error"
+        - "information_ratio"
+      
+      market_indicators:
+        - "vix_index"
+        - "treasury_yields"
+        - "credit_spreads"
+        - "currency_rates"
+        - "commodity_prices"
+        - "economic_growth"
+        - "inflation_rate"
+        - "unemployment_rate"
+        - "gdp_growth"
+        - "interest_rates"
+        - "central_bank_policy"
+        - "geopolitical_risk"
+        - "regulatory_changes"
+        - "market_sentiment"
+        - "volatility_regime"
+      
+      transaction_patterns:
+        - "transaction_frequency"
+        - "average_transaction_size"
+        - "transaction_timing"
+        - "counterparty_risk"
+        - "payment_methods"
+        - "geographic_patterns"
+        - "amount_distribution"
+        - "seasonal_patterns"
+        - "anomaly_scores"
+        - "velocity_patterns"
+    
+    # Risk Assessment Configuration
+    risk_assessment:
+      # Assessment frequencies
+      frequencies:
+        user_profile: "MONTHLY"
+        portfolio_risk: "WEEKLY"
+        transaction_risk: "REAL_TIME"
+        compliance_risk: "DAILY"
+        market_risk: "HOURLY"
+        fraud_risk: "REAL_TIME"
+      
+      # Risk thresholds
+      thresholds:
+        very_low: 0.2
+        low: 0.4
+        moderate: 0.6
+        high: 0.8
+        very_high: 1.0
+        extreme: 1.2
+      
+      # Confidence thresholds
+      confidence:
+        high: 0.8
+        medium: 0.6
+        low: 0.4
+      
+      # Alert thresholds
+      alerts:
+        risk_score_change: 0.1
+        confidence_drop: 0.2
+        model_drift: 0.15
+        performance_degradation: 0.1
+    
+    # Yield Optimization Configuration
+    yield_optimization:
+      # Optimization strategies
+      strategies:
+        - "risk_parity"
+        - "black_litterman"
+        - "mean_variance"
+        - "maximum_sharpe"
+        - "minimum_variance"
+        - "maximum_diversification"
+        - "risk_budgeting"
+        - "factor_investing"
+        - "smart_beta"
+        - "alternative_weighting"
+      
+      # Rebalancing
+      rebalancing:
+        frequency: "WEEKLY"
+        threshold: 0.05
+        max_turnover: 0.20
+        tax_optimization: true
+        transaction_costs: true
+      
+      # Constraints
+      constraints:
+        min_position: 0.01
+        max_position: 0.20
+        min_sector: 0.05
+        max_sector: 0.30
+        min_international: 0.20
+        max_leverage: 1.5
+        min_liquidity: 0.10
+    
+    # Model Training & Validation
+    training:
+      # Data sources
+      data_sources:
+        - "internal_transactions"
+        - "market_data_feeds"
+        - "economic_indicators"
+        - "regulatory_reports"
+        - "news_sentiment"
+        - "social_media"
+        - "alternative_data"
+      
+      # Training schedule
+      schedule:
+        daily_retraining: false
+        weekly_retraining: true
+        monthly_full_retraining: true
+        quarterly_model_evaluation: true
+        yearly_model_replacement: false
+      
+      # Validation metrics
+      validation:
+        metrics:
+          - "accuracy"
+          - "precision"
+          - "recall"
+          - "f1_score"
+          - "auc_roc"
+          - "log_loss"
+          - "mae"
+          - "rmse"
+          - "r_squared"
+        
+        cross_validation:
+          folds: 5
+          stratified: true
+          shuffle: true
+        
+        backtesting:
+          period: "2Y"
+          rebalance_frequency: "MONTHLY"
+          transaction_costs: true
+          slippage: true
+    
+    # Performance Monitoring
+    monitoring:
+      # Model performance
+      model_performance:
+        accuracy_threshold: 0.75
+        drift_threshold: 0.15
+        performance_window: "30D"
+        alert_frequency: "DAILY"
+      
+      # System performance
+      system_performance:
+        response_time_threshold: 1000  # ms
+        throughput_threshold: 1000     # requests/second
+        error_rate_threshold: 0.01     # 1%
+        availability_threshold: 0.99   # 99%
+      
+      # Data quality
+      data_quality:
+        completeness_threshold: 0.95
+        accuracy_threshold: 0.90
+        consistency_threshold: 0.95
+        timeliness_threshold: 300     # 5 minutes
+    
+    # Integration Settings
+    integration:
+      # External APIs
+      external_apis:
+        market_data:
+          - "yahoo_finance"
+          - "alpha_vantage"
+          - "iex_cloud"
+          - "polygon"
+          - "finnhub"
+          - "quandl"
+        
+        economic_data:
+          - "fred"
+          - "world_bank"
+          - "imf"
+          - "oecd"
+          - "bloomberg"
+          - "reuters"
+        
+        news_sentiment:
+          - "newsapi"
+          - "gnews"
+          - "newsdata"
+          - "media_stack"
+          - "news_catcher"
+      
+      # Internal services
+      internal_services:
+        - "neobridge-auth-service"
+        - "neobridge-account-service"
+        - "neobridge-payment-service"
+        - "neobridge-crypto-service"
+        - "neobridge-investment-service"
+        - "neobridge-compliance-service"
+        - "neobridge-analytics-service"
+    
+    # Scheduling
+    scheduling:
+      risk_assessment:
+        cron: "0 */6 * * * *"  # Every 6 hours
+        enabled: true
+      model_training:
+        cron: "0 0 2 * * 1"    # Every Monday at 2 AM
+        enabled: true
+      performance_monitoring:
+        cron: "0 */15 * * * *" # Every 15 minutes
+        enabled: true
+      data_validation:
+        cron: "0 0 * * * *"    # Daily at midnight
+        enabled: true
+
+# Cache Configuration
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000  # 10 minutes
+      cache-null-values: false
+    cache-names:
+      - risk-assessments
+      - ml-models
+      - feature-vectors
+      - predictions
+      - model-performance
+      - market-data
+      - economic-indicators
+      - news-sentiment

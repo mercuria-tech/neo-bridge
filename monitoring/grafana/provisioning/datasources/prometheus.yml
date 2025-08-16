@@ -1,0 +1,9 @@
+# Grafana Datasource Configuration
+# Prometheus datasource for NeoBridge platform monitoring
+
+datasources:
+  prometheus:
+    name: Prometheus
+    type: prometheus
+    url: http://prometheus:9090
+    isDefault: true

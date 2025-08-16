@@ -1,0 +1,500 @@
+# NeoBridge NFT Marketplace Service Configuration
+spring:
+  application:
+    name: neobridge-nft-marketplace
+  
+  profiles:
+    active: dev
+  
+  datasource:
+    url: jdbc:postgresql://postgres:5432/neobridge_dev
+    username: neobridge_user
+    password: neobridge_password
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+  
+  redis:
+    host: redis
+    port: 6379
+    database: 5
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: -1ms
+  
+  kafka:
+    bootstrap-servers: kafka:9092
+    consumer:
+      group-id: neobridge-nft-marketplace
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+server:
+  port: 8087
+  servlet:
+    context-path: /nft-marketplace
+
+# Security Configuration
+security:
+  jwt:
+    secret: neobridge-nft-marketplace-jwt-secret-key-2024
+    expiration: 86400000  # 24 hours
+    refresh-expiration: 604800000  # 7 days
+  
+  password:
+    encoder:
+      strength: 12
+
+# Logging Configuration
+logging:
+  level:
+    com.neobridge.nft: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.kafka: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.web3j: INFO
+    org.ipfs: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Management Endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# NFT Marketplace Service Specific Configuration
+neobridge:
+  nft-marketplace:
+    # Blockchain Networks
+    blockchains:
+      ethereum:
+        mainnet:
+          rpc_url: "https://mainnet.infura.io/v3/${INFURA_PROJECT_ID}"
+          chain_id: 1
+          explorer: "https://etherscan.io"
+          gas_limit: 300000
+          gas_price: "20000000000"  # 20 Gwei
+        goerli:
+          rpc_url: "https://goerli.infura.io/v3/${INFURA_PROJECT_ID}"
+          chain_id: 5
+          explorer: "https://goerli.etherscan.io"
+          gas_limit: 300000
+          gas_price: "20000000000"
+        sepolia:
+          rpc_url: "https://sepolia.infura.io/v3/${INFURA_PROJECT_ID}"
+          chain_id: 11155111
+          explorer: "https://sepolia.etherscan.io"
+          gas_limit: 300000
+          gas_price: "20000000000"
+      
+      polygon:
+        mainnet:
+          rpc_url: "https://polygon-rpc.com"
+          chain_id: 137
+          explorer: "https://polygonscan.com"
+          gas_limit: 300000
+          gas_price: "30000000000"  # 30 Gwei
+        mumbai:
+          rpc_url: "https://rpc-mumbai.maticvigil.com"
+          chain_id: 80001
+          explorer: "https://mumbai.polygonscan.com"
+          gas_limit: 300000
+          gas_price: "30000000000"
+      
+      binance_smart_chain:
+        mainnet:
+          rpc_url: "https://bsc-dataseed1.binance.org"
+          chain_id: 56
+          explorer: "https://bscscan.com"
+          gas_limit: 300000
+          gas_price: "5000000000"  # 5 Gwei
+        testnet:
+          rpc_url: "https://data-seed-prebsc-1-s1.binance.org:8545"
+          chain_id: 97
+          explorer: "https://testnet.bscscan.com"
+          gas_limit: 300000
+          gas_price: "10000000000"  # 10 Gwei
+      
+      solana:
+        mainnet:
+          rpc_url: "https://api.mainnet-beta.solana.com"
+          chain_id: 101
+          explorer: "https://explorer.solana.com"
+          commitment: "confirmed"
+        devnet:
+          rpc_url: "https://api.devnet.solana.com"
+          chain_id: 102
+          explorer: "https://explorer.solana.com/?cluster=devnet"
+          commitment: "confirmed"
+    
+    # Smart Contract Addresses
+    contracts:
+      ethereum:
+        nft_factory: "0x..."
+        marketplace: "0x..."
+        auction_house: "0x..."
+        royalty_registry: "0x..."
+      polygon:
+        nft_factory: "0x..."
+        marketplace: "0x..."
+        auction_house: "0x..."
+        royalty_registry: "0x..."
+      binance_smart_chain:
+        nft_factory: "0x..."
+        marketplace: "0x..."
+        auction_house: "0x..."
+        royalty_registry: "0x..."
+      solana:
+        nft_program: "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+        marketplace: "0x..."
+        auction_house: "0x..."
+    
+    # IPFS Configuration
+    ipfs:
+      gateway: "https://ipfs.io/ipfs/"
+      api_endpoint: "https://ipfs.infura.io:5001/api/v0"
+      project_id: "${IPFS_PROJECT_ID}"
+      project_secret: "${IPFS_PROJECT_SECRET}"
+      pinning_service: "infura"
+      max_file_size: 100000000  # 100MB
+      supported_formats:
+        - "image/jpeg"
+        - "image/png"
+        - "image/gif"
+        - "image/webp"
+        - "image/svg+xml"
+        - "video/mp4"
+        - "video/webm"
+        - "audio/mpeg"
+        - "audio/wav"
+        - "application/pdf"
+        - "text/plain"
+        - "application/json"
+    
+    # NFT Standards & Metadata
+    standards:
+      erc_721:
+        name: "ERC-721"
+        description: "Non-Fungible Token Standard"
+        interface: "0x80ac58cd"
+        events:
+          - "Transfer"
+          - "Approval"
+          - "ApprovalForAll"
+      erc_1155:
+        name: "ERC-1155"
+        description: "Multi-Token Standard"
+        interface: "0xd9b67a26"
+        events:
+          - "TransferSingle"
+          - "TransferBatch"
+          - "ApprovalForAll"
+          - "URI"
+      erc_4907:
+        name: "ERC-4907"
+        description: "Rental NFT Standard"
+        interface: "0xad092b5c"
+        events:
+          - "UpdateUser"
+          - "UpdateUserExpiry"
+    
+    # Marketplace Features
+    marketplace:
+      # Listing
+      listing:
+        min_price: 0.001
+        max_price: 1000000
+        supported_currencies:
+          - "ETH"
+          - "MATIC"
+          - "BNB"
+          - "SOL"
+          - "USDC"
+          - "USDT"
+          - "DAI"
+        listing_fee: 0.025  # 2.5%
+        royalty_fee: 0.10   # 10%
+      
+      # Auctions
+      auction:
+        min_duration: 3600    # 1 hour
+        max_duration: 604800  # 1 week
+        min_bid_increment: 0.01
+        reserve_price_required: false
+        auto_extend: true
+        extend_window: 300    # 5 minutes
+      
+      # Offers
+      offers:
+        max_offers_per_nft: 10
+        offer_expiry: 604800  # 1 week
+        min_offer_amount: 0.001
+        auto_accept_threshold: 0.0
+    
+    # Categories & Collections
+    categories:
+      art:
+        - "digital_art"
+        - "traditional_art"
+        - "photography"
+        - "illustration"
+        - "painting"
+        - "sculpture"
+        - "mixed_media"
+        - "generative_art"
+        - "ai_art"
+        - "pixel_art"
+      
+      collectibles:
+        - "trading_cards"
+        - "figurines"
+        - "comics"
+        - "memorabilia"
+        - "stamps"
+        - "coins"
+        - "toys"
+        - "posters"
+        - "books"
+        - "magazines"
+      
+      gaming:
+        - "characters"
+        - "weapons"
+        - "armor"
+        - "vehicles"
+        - "land"
+        - "buildings"
+        - "items"
+        - "skins"
+        - "emotes"
+        - "achievements"
+      
+      music:
+        - "songs"
+        - "albums"
+        - "concerts"
+        - "instruments"
+        - "lyrics"
+        - "beats"
+        - "samples"
+        - "remixes"
+        - "live_recordings"
+        - "music_videos"
+      
+      sports:
+        - "moments"
+        - "highlights"
+        - "tickets"
+        - "memorabilia"
+        - "jerseys"
+        - "equipment"
+        - "cards"
+        - "autographs"
+        - "championships"
+        - "records"
+      
+      utility:
+        - "domains"
+        - "software"
+        - "licenses"
+        - "certificates"
+        - "memberships"
+        - "access_passes"
+        - "subscriptions"
+        - "services"
+        - "tools"
+        - "platforms"
+    
+    # Royalties & Fees
+    royalties:
+      default_percentage: 0.10  # 10%
+      max_percentage: 0.25      # 25%
+      min_percentage: 0.01      # 1%
+      marketplace_fee: 0.025    # 2.5%
+      gas_fee_estimate: 0.005   # 0.5%
+      network_fee: 0.001        # 0.1%
+    
+    # Compliance & Verification
+    compliance:
+      # KYC Requirements
+      kyc:
+        required_for_high_value: true
+        high_value_threshold: 10000  # $10,000
+        verification_providers:
+          - "jumio"
+          - "onfido"
+          - "veriff"
+          - "sumsub"
+      
+      # AML Screening
+      aml:
+        enabled: true
+        screening_threshold: 1000   # $1,000
+        providers:
+          - "chainalysis"
+          - "elliptic"
+          - "ciphertrace"
+          - "crystal"
+      
+      # Content Moderation
+      content_moderation:
+        enabled: true
+        auto_moderation: true
+        manual_review_threshold: 0.8
+        providers:
+          - "openai"
+          - "google"
+          - "amazon"
+          - "microsoft"
+      
+      # Risk Scoring
+      risk_scoring:
+        enabled: true
+        factors:
+          - "creator_reputation"
+          - "transaction_history"
+          - "price_volatility"
+          - "market_demand"
+          - "legal_status"
+          - "copyright_issues"
+    
+    # Analytics & Reporting
+    analytics:
+      # Market Data
+      market_data:
+        price_feeds:
+          - "coinbase"
+          - "binance"
+          - "kraken"
+          - "gemini"
+          - "coinbase_pro"
+        update_frequency: 60  # 1 minute
+        historical_data: true
+        trend_analysis: true
+      
+      # Trading Analytics
+      trading_analytics:
+        volume_analysis: true
+        price_correlation: true
+        market_cap_tracking: true
+        holder_analysis: true
+        whale_tracking: true
+        arbitrage_detection: true
+      
+      # Social Analytics
+      social_analytics:
+        social_mentions: true
+        sentiment_analysis: true
+        influencer_tracking: true
+        community_growth: true
+        engagement_metrics: true
+    
+    # Integration Settings
+    integration:
+      # External APIs
+      external_apis:
+        market_data:
+          - "opensea"
+          - "rarible"
+          - "nifty_gateway"
+          - "superrare"
+          - "foundation"
+          - "makersplace"
+          - "knownorigin"
+          - "async_art"
+        
+        social_media:
+          - "twitter"
+          - "discord"
+          - "telegram"
+          - "reddit"
+          - "instagram"
+          - "tiktok"
+          - "youtube"
+          - "twitch"
+        
+        analytics:
+          - "dune_analytics"
+          - "nansen"
+          - "messari"
+          - "the_block"
+          - "glassnode"
+          - "santiment"
+          - "lunar_crush"
+          - "alternative_me"
+      
+      # Internal services
+      internal_services:
+        - "neobridge-auth-service"
+        - "neobridge-account-service"
+        - "neobridge-payment-service"
+        - "neobridge-crypto-service"
+        - "neobridge-investment-service"
+        - "neobridge-ai-risk-service"
+        - "neobridge-compliance-service"
+        - "neobridge-analytics-service"
+    
+    # Scheduling
+    scheduling:
+      market_data_updates:
+        cron: "0 */1 * * * *"  # Every minute
+        enabled: true
+      price_validation:
+        cron: "0 */5 * * * *"  # Every 5 minutes
+        enabled: true
+      compliance_checks:
+        cron: "0 0 */6 * * *"  # Every 6 hours
+        enabled: true
+      analytics_reports:
+        cron: "0 0 0 * * *"    # Daily at midnight
+        enabled: true
+
+# Cache Configuration
+  cache:
+    type: redis
+    redis:
+      time-to-live: 300000  # 5 minutes
+      cache-null-values: false
+    cache-names:
+      - nft-metadata
+      - market-prices
+      - user-collections
+      - trading-history
+      - auction-data
+      - offer-data
+      - blockchain-data
+      - ipfs-content

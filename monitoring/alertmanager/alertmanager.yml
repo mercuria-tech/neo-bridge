@@ -1,0 +1,184 @@
+# NeoBridge Platform - Alertmanager Configuration
+# Handles alert routing and notification
+
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alertmanager@neobridge.com'
+  smtp_auth_username: 'alertmanager@neobridge.com'
+  smtp_auth_password: 'alertmanager-password'
+
+route:
+  group_by: ['alertname', 'service', 'severity']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'web.hook'
+  routes:
+    # Critical alerts - immediate notification
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 0s
+      group_interval: 0s
+      repeat_interval: 15m
+      continue: true
+    
+    # Warning alerts - delayed notification
+    - match:
+        severity: warning
+      receiver: 'warning-alerts'
+      group_wait: 30s
+      group_interval: 30s
+      repeat_interval: 2h
+      continue: true
+    
+    # Database alerts
+    - match:
+        service: database
+      receiver: 'database-team'
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 1h
+    
+    # Service alerts
+    - match:
+        service: services
+      receiver: 'service-team'
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 1h
+    
+    # Infrastructure alerts
+    - match:
+        service: infrastructure
+      receiver: 'infrastructure-team'
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 1h
+
+inhibit_rules:
+  # Inhibit critical alerts when service is down
+  - source_match:
+      severity: 'critical'
+      alertname: 'PlatformServiceDown'
+    target_match:
+      severity: 'warning'
+    equal: ['service']
+  
+  # Inhibit warning alerts when critical alerts exist
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['service', 'alertname']
+
+receivers:
+  - name: 'web.hook'
+    webhook_configs:
+      - url: 'http://localhost:5001/'
+        send_resolved: true
+
+  - name: 'critical-alerts'
+    webhook_configs:
+      - url: 'http://localhost:5001/critical'
+        send_resolved: true
+    email_configs:
+      - to: 'dev@neobridge.com'
+        send_resolved: true
+        headers:
+          subject: '🚨 CRITICAL ALERT: {{ .GroupLabels.alertname }}'
+        body: |
+          Alert: {{ .GroupLabels.alertname }}
+          Severity: {{ .GroupLabels.severity }}
+          Service: {{ .GroupLabels.service }}
+          
+          {{ range .Alerts }}
+          Summary: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Starts: {{ .StartsAt }}
+          {{ end }}
+
+  - name: 'warning-alerts'
+    webhook_configs:
+      - url: 'http://localhost:5001/warning'
+        send_resolved: true
+    email_configs:
+      - to: 'dev@neobridge.com'
+        send_resolved: true
+        headers:
+          subject: '⚠️ WARNING ALERT: {{ .GroupLabels.alertname }}'
+        body: |
+          Alert: {{ .GroupLabels.alertname }}
+          Severity: {{ .GroupLabels.severity }}
+          Service: {{ .GroupLabels.service }}
+          
+          {{ range .Alerts }}
+          Summary: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Starts: {{ .StartsAt }}
+          {{ end }}
+
+  - name: 'database-team'
+    webhook_configs:
+      - url: 'http://localhost:5001/database'
+        send_resolved: true
+    email_configs:
+      - to: 'database@neobridge.com'
+        send_resolved: true
+        headers:
+          subject: '🗄️ DATABASE ALERT: {{ .GroupLabels.alertname }}'
+        body: |
+          Alert: {{ .GroupLabels.alertname }}
+          Severity: {{ .GroupLabels.severity }}
+          Service: {{ .GroupLabels.service }}
+          
+          {{ range .Alerts }}
+          Summary: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Starts: {{ .StartsAt }}
+          {{ end }}
+
+  - name: 'service-team'
+    webhook_configs:
+      - url: 'http://localhost:5001/services'
+        send_resolved: true
+    email_configs:
+      - to: 'services@neobridge.com'
+        send_resolved: true
+        headers:
+          subject: '🔧 SERVICE ALERT: {{ .GroupLabels.alertname }}'
+        body: |
+          Alert: {{ .GroupLabels.alertname }}
+          Severity: {{ .GroupLabels.severity }}
+          Service: {{ .GroupLabels.service }}
+          
+          {{ range .Alerts }}
+          Summary: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Starts: {{ .StartsAt }}
+          {{ end }}
+
+  - name: 'infrastructure-team'
+    webhook_configs:
+      - url: 'http://localhost:5001/infrastructure'
+        send_resolved: true
+    email_configs:
+      - to: 'infrastructure@neobridge.com'
+        send_resolved: true
+        headers:
+          subject: '🏗️ INFRASTRUCTURE ALERT: {{ .GroupLabels.alertname }}'
+        body: |
+          Alert: {{ .GroupLabels.alertname }}
+          Severity: {{ .GroupLabels.severity }}
+          Service: {{ .GroupLabels.service }}
+          
+          {{ range .Alerts }}
+          Summary: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Starts: {{ .StartsAt }}
+          {{ end }}
+
+# Templates for alert notifications
+templates:
+  - '/etc/alertmanager/template/*.tmpl'

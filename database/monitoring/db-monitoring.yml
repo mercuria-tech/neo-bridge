@@ -1,0 +1,66 @@
+# NeoBridge Database Monitoring Configuration
+# Prometheus and Grafana monitoring setup
+
+# PostgreSQL Exporter Configuration
+postgres_exporter:
+  enabled: true
+  port: 9187
+  metrics:
+    - pg_stat_database
+    - pg_stat_user_tables
+    - pg_stat_user_indexes
+    - pg_locks
+    - pg_stat_activity
+    - pg_stat_bgwriter
+    - pg_stat_replication
+
+# Redis Exporter Configuration
+redis_exporter:
+  enabled: true
+  port: 9121
+  metrics:
+    - redis_up
+    - redis_connected_clients
+    - redis_memory_used_bytes
+    - redis_keyspace_hits_total
+    - redis_keyspace_misses_total
+
+# Kafka Exporter Configuration
+kafka_exporter:
+  enabled: true
+  port: 9308
+  metrics:
+    - kafka_brokers
+    - kafka_topic_partitions
+    - kafka_consumer_group_members
+    - kafka_consumer_group_offset
+
+# Alert Rules
+alerts:
+  database_connection:
+    condition: "up{job='postgres'} == 0"
+    duration: "1m"
+    severity: "critical"
+    summary: "Database connection lost"
+    description: "PostgreSQL database is not responding"
+
+  high_connection_count:
+    condition: "pg_stat_activity_count > 80"
+    duration: "5m"
+    severity: "warning"
+    summary: "High database connections"
+    description: "Database has more than 80 active connections"
+
+  slow_queries:
+    condition: "rate(pg_stat_activity_max_tx_duration{datname='neobridge_dev'}[5m]) > 30"
+    duration: "2m"
+    severity: "warning"
+    summary: "Slow database queries detected"
+    description: "Queries taking longer than 30 seconds detected"
+
+  disk_space:
+    condition: "node_filesystem_avail_bytes{mountpoint='/var/lib/postgresql'} / node_filesystem_size_bytes{mountpoint='/var/lib/postgresql'} < 0.1"
+    duration: "5m"
+    severity: "critical"
+    summary: "Low disk space"
+    description: "Database disk space is below 10%"

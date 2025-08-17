@@ -1,0 +1,276 @@
+---
+# NeoBridge Common Service (Simple)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neobridge-common
+  namespace: neobridge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: neobridge-common
+  template:
+    metadata:
+      labels:
+        app: neobridge-common
+    spec:
+      containers:
+      - name: neobridge-common
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        env:
+        - name: NGINX_HOST
+          value: "neobridge-common"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neobridge-common
+  namespace: neobridge
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: neobridge-common
+---
+# NeoBridge Auth Service (Simple)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neobridge-auth
+  namespace: neobridge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: neobridge-auth
+  template:
+    metadata:
+      labels:
+        app: neobridge-auth
+    spec:
+      containers:
+      - name: neobridge-auth
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        env:
+        - name: NGINX_HOST
+          value: "neobridge-auth"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neobridge-auth
+  namespace: neobridge
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8081
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: neobridge-auth
+---
+# NeoBridge Account Service (Simple)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neobridge-account
+  namespace: neobridge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: neobridge-account
+  template:
+    metadata:
+      labels:
+        app: neobridge-account
+    spec:
+      containers:
+      - name: neobridge-account
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        env:
+        - name: NGINX_HOST
+          value: "neobridge-account"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neobridge-account
+  namespace: neobridge
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8082
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: neobridge-account
+---
+# NeoBridge Payment Service (Simple)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neobridge-payment
+  namespace: neobridge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: neobridge-payment
+  template:
+    metadata:
+      labels:
+        app: neobridge-payment
+    spec:
+      containers:
+      - name: neobridge-payment
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        env:
+        - name: NGINX_HOST
+          value: "neobridge-payment"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neobridge-payment
+  namespace: neobridge
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8083
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: neobridge-payment
+---
+# NeoBridge Crypto Service (Simple)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neobridge-crypto
+  namespace: neobridge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: neobridge-crypto
+  template:
+    metadata:
+      labels:
+        app: neobridge-crypto
+    spec:
+      containers:
+      - name: neobridge-crypto
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        env:
+        - name: NGINX_HOST
+          value: "neobridge-crypto"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neobridge-crypto
+  namespace: neobridge
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8084
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: neobridge-crypto
+---
+# NeoBridge AI Risk Service (Simple)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neobridge-ai-risk
+  namespace: neobridge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: neobridge-ai-risk
+  template:
+    metadata:
+      labels:
+        app: neobridge-ai-risk
+    spec:
+      containers:
+      - name: neobridge-ai-risk
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        env:
+        - name: NGINX_HOST
+          value: "neobridge-ai-risk"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neobridge-ai-risk
+  namespace: neobridge
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8085
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: neobridge-ai-risk

@@ -1,0 +1,370 @@
+---
+# NeoBridge Common Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neobridge-common
+  namespace: neobridge
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: neobridge-common
+  template:
+    metadata:
+      labels:
+        app: neobridge-common
+    spec:
+      containers:
+      - name: neobridge-common
+        image: neobridge/neobridge-common:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "kubernetes"
+        - name: LOGGING_LEVEL
+          value: "INFO"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neobridge-common
+  namespace: neobridge
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+  selector:
+    app: neobridge-common
+---
+# NeoBridge Auth Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neobridge-auth
+  namespace: neobridge
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: neobridge-auth
+  template:
+    metadata:
+      labels:
+        app: neobridge-auth
+    spec:
+      containers:
+      - name: neobridge-auth
+        image: neobridge/neobridge-auth:latest
+        ports:
+        - containerPort: 8081
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "kubernetes"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: jwt-secret
+              key: secret
+        - name: LOGGING_LEVEL
+          value: "INFO"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8081
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8081
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neobridge-auth
+  namespace: neobridge
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8081
+    targetPort: 8081
+    protocol: TCP
+  selector:
+    app: neobridge-auth
+---
+# NeoBridge Account Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neobridge-account
+  namespace: neobridge
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: neobridge-account
+  template:
+    metadata:
+      labels:
+        app: neobridge-account
+    spec:
+      containers:
+      - name: neobridge-account
+        image: neobridge/neobridge-account:latest
+        ports:
+        - containerPort: 8082
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "kubernetes"
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-password
+              key: latest
+        - name: LOGGING_LEVEL
+          value: "INFO"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8082
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8082
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neobridge-account
+  namespace: neobridge
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8082
+    targetPort: 8082
+    protocol: TCP
+  selector:
+    app: neobridge-account
+---
+# NeoBridge Payment Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neobridge-payment
+  namespace: neobridge
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: neobridge-payment
+  template:
+    metadata:
+      labels:
+        app: neobridge-payment
+    spec:
+      containers:
+      - name: neobridge-payment
+        image: neobridge/neobridge-payment:latest
+        ports:
+        - containerPort: 8083
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "kubernetes"
+        - name: LOGGING_LEVEL
+          value: "INFO"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8083
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8083
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neobridge-payment
+  namespace: neobridge
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8083
+    targetPort: 8083
+    protocol: TCP
+  selector:
+    app: neobridge-payment
+---
+# NeoBridge Crypto Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neobridge-crypto
+  namespace: neobridge
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: neobridge-crypto
+  template:
+    metadata:
+      labels:
+        app: neobridge-crypto
+    spec:
+      containers:
+      - name: neobridge-crypto
+        image: neobridge/neobridge-crypto:latest
+        ports:
+        - containerPort: 8084
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "kubernetes"
+        - name: LOGGING_LEVEL
+          value: "INFO"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8084
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8084
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neobridge-crypto
+  namespace: neobridge
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8084
+    targetPort: 8084
+    protocol: TCP
+  selector:
+    app: neobridge-crypto
+---
+# NeoBridge AI Risk Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neobridge-ai-risk
+  namespace: neobridge
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: neobridge-ai-risk
+  template:
+    metadata:
+      labels:
+        app: neobridge-ai-risk
+    spec:
+      containers:
+      - name: neobridge-ai-risk
+        image: neobridge/neobridge-ai-risk:latest
+        ports:
+        - containerPort: 8085
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "kubernetes"
+        - name: LOGGING_LEVEL
+          value: "INFO"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "1000m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8085
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8085
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neobridge-ai-risk
+  namespace: neobridge
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8085
+    targetPort: 8085
+    protocol: TCP
+  selector:
+    app: neobridge-ai-risk

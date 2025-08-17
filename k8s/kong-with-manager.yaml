@@ -1,0 +1,181 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kong-config
+  namespace: neobridge
+data:
+  kong.yml: |
+    _format_version: "3.0"
+    
+    services:
+      # Test Service (existing)
+      - name: test-service
+        url: http://test-service.neobridge.svc.cluster.local:80
+        routes:
+          - name: test-route
+            protocols:
+              - http
+            methods:
+              - GET
+            paths:
+              - /
+            strip_path: false
+
+      # Kong Manager Interface
+      - name: kong-manager
+        url: http://kong-manager.neobridge.svc.cluster.local:80
+        routes:
+          - name: manager-route
+            protocols:
+              - http
+            methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+            paths:
+              - /manager
+              - /manager/
+            strip_path: true
+
+      # Monitoring Services
+      - name: prometheus
+        url: http://prometheus.neobridge.svc.cluster.local:9090
+        routes:
+          - name: prometheus-route
+            protocols:
+              - http
+            methods:
+              - GET
+            paths:
+              - /monitoring
+              - /monitoring/
+            strip_path: true
+
+      - name: grafana
+        url: http://grafana.neobridge.svc.cluster.local:3000
+        routes:
+          - name: grafana-route
+            protocols:
+              - http
+            methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+            paths:
+              - /dashboard
+              - /dashboard/
+            strip_path: true
+
+    # Global plugins
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - "*"
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
+          headers:
+            - Content-Type
+            - Authorization
+            - X-Requested-With
+          exposed_headers:
+            - X-Total-Count
+          credentials: true
+          max_age: 3600
+
+      - name: rate-limiting
+        config:
+          minute: 100
+          hour: 1000
+          day: 10000
+          policy: local
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-proxy
+  namespace: neobridge
+spec:
+  type: LoadBalancer
+  ports:
+  - name: proxy
+    port: 80
+    targetPort: 8000
+    protocol: TCP
+  - name: admin
+    port: 8001
+    targetPort: 8001
+    protocol: TCP
+  selector:
+    app: kong
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kong
+  namespace: neobridge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kong
+  template:
+    metadata:
+      labels:
+        app: kong
+    spec:
+      containers:
+      - name: kong
+        image: kong:3.4
+        ports:
+        - containerPort: 8000
+        - containerPort: 8001
+        env:
+        - name: KONG_DATABASE
+          value: "off"
+        - name: KONG_DECLARATIVE_CONFIG
+          value: "/etc/kong/kong.yml"
+        - name: KONG_PROXY_ACCESS_LOG
+          value: "/dev/stdout"
+        - name: KONG_ADMIN_ACCESS_LOG
+          value: "/dev/stdout"
+        - name: KONG_PROXY_ERROR_LOG
+          value: "/dev/stderr"
+        - name: KONG_ADMIN_ERROR_LOG
+          value: "/dev/stderr"
+        - name: KONG_ADMIN_LISTEN
+          value: "0.0.0.0:8001"
+        - name: KONG_PROXY_LISTEN
+          value: "0.0.0.0:8000"
+        volumeMounts:
+        - name: kong-config
+          mountPath: /etc/kong
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /status
+            port: 8001
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /status
+            port: 8001
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: kong-config
+        configMap:
+          name: kong-config
